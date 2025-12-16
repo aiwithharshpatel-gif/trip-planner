@@ -13,21 +13,62 @@ export default function TripResultPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // In a real app, this would fetch from Supabase
-        // For now, we load from localStorage for MVP
-        const id = params.id as string;
-        if (id) {
-            const stored = localStorage.getItem(`trip-${id}`);
-            if (stored) {
+        async function fetchTrip() {
+            if (!params.id) return;
+            const tripId = params.id as string;
+
+            // 1. Try LocalStorage (Fastest, works for anonymous/fresh generation)
+            const localStored = localStorage.getItem(`trip-${tripId}`) || localStorage.getItem(tripId);
+            if (localStored) {
                 try {
-                    const parsed = JSON.parse(stored);
+                    const parsed = JSON.parse(localStored);
                     setTrip(parsed);
+                    setLoading(false);
+                    return;
                 } catch (e) {
-                    console.error("Failed to parse trip", e);
+                    console.error("Failed to parse local trip", e);
                 }
             }
+
+            // 2. Try Supabase (For saved/shared trips)
+            try {
+                const { createClient } = await import("@/lib/supabase/client");
+                const supabase = createClient();
+
+                const { data, error } = await supabase
+                    .from("trips")
+                    .select("*")
+                    .eq("id", tripId)
+                    .single();
+
+                if (error) {
+                    // Start: Fix for debugging - ensure we don't just fail silently if it's a real DB error
+                    // But if it's just "not found" (code PGRST116), maybe expected.
+                    console.error("Supabase fetch error:", error);
+                    setLoading(false);
+                    return;
+                }
+
+                if (data) {
+                    // The trip data stores the raw JSON in 'trip_data' column 
+                    // based on our schema assumption or we might need to adjust based on actual schema.
+                    // Let's assume the trip object IS stored as jsonb in a column named 'trip_data' 
+                    // or if the columns map directly. 
+                    // Checked previous context: we haven't seen the clear schema but usually it's jsonb.
+                    // Let's assume row is the trip or row.trip_data is the trip.
+                    // Safest bet: check if 'trip_data' exists, else use row.
+
+                    const tripData = data.trip_data || data;
+                    setTrip(tripData as TripItinerary);
+                }
+            } catch (err) {
+                console.error("Unexpected error:", err);
+            } finally {
+                setLoading(false);
+            }
         }
-        setLoading(false);
+
+        fetchTrip();
     }, [params.id]);
 
     if (loading) {
