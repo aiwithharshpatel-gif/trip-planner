@@ -46,11 +46,15 @@ export async function generateTrip(input: string): Promise<{ success: boolean; d
 
         return { success: true, data: tripData };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Trip Generation Error:", error);
+
+        // Debugging: Return actual error message to client to help user on Vercel
+        const errorMessage = error?.message || "Unknown error";
+
         return {
             success: false,
-            error: "Failed to generate itinerary. Please try again with a different request or check API keys."
+            error: `Failed to generate itinerary: ${errorMessage}. (Check Vercel Logs or API Keys)`
         };
     }
 }
