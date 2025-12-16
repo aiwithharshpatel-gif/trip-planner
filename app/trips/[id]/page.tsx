@@ -82,7 +82,7 @@ export default function TripResultPage() {
     if (!trip) {
         return (
             <div className="h-screen w-full flex flex-col items-center justify-center gap-4 bg-gray-50 p-4">
-                <h1 className="text-2xl font-bold">Trip Not Found</h1>
+                <h1 className="text-2xl font-bold text-red-600">DEBUG MODE ACTIVE</h1>
                 <p className="text-gray-500">We couldn't find the itinerary you're looking for.</p>
 
                 <div className="w-full max-w-md bg-white p-4 rounded-lg border border-red-200 text-left text-xs font-mono overflow-auto">
